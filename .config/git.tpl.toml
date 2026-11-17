@@ -21,7 +21,7 @@ gh_ship = true
 github_owner = "memcastle"
 integration_template = "https://github.com/memcastle/memcastle-integration.tpl"
 integrations = []
-memcastle = ">=0.6"
+memcastle = ">=0.5.2"
 plugin_id = "google"
 provider = "google"
 registry = true
