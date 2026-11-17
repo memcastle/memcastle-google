@@ -1,0 +1,6 @@
+{
+  "id": "b", "threadId": "tb", "historyId": "10", "internalDate": "1700000000000", "labelIds": ["INBOX"],
+  "payload": {"mimeType":"multipart/mixed", "headers":[{"name":"Subject","value":"Meeting"}], "parts":[
+    {"partId":"1","mimeType":"text/vtt","filename":"meeting.vtt","body":{"size":21,"attachmentId":"transcript"}}
+  ]}
+}

@@ -1,0 +1,4 @@
+{
+  "id": "a", "threadId": "ta", "historyId": "10", "internalDate": "1700000000000", "labelIds": ["INBOX"],
+  "payload": {"mimeType": "text/plain", "headers": [{"name":"Subject","value":"Alpha"}], "body": {"size":6,"data":"YWxwaGEK"}}
+}

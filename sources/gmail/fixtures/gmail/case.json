@@ -1,0 +1,25 @@
+{
+  "name": "gmail",
+  "description": "Offline OAuth Gmail API: two messages, exact query and transcript attachment",
+  "locator": ".",
+  "opaque_locator": "gmail:reader@example.com",
+  "options": {"query": "from:author@example.com"},
+  "limit": 1,
+  "documents": [
+    {
+      "external_id": "a",
+      "title": "Alpha",
+      "kind": "other",
+      "tags": ["gmail"],
+      "segments": ["subject: Alpha\nGmail thread: ta\nLabels: INBOX", "alpha\n"]
+    },
+    {
+      "external_id": "b",
+      "title": "Meeting",
+      "kind": "other",
+      "tags": ["gmail"],
+      "segments": ["subject: Meeting\nGmail thread: tb\nLabels: INBOX", "Attachment: meeting.vtt (text/vtt)\nWEBVTT\nhello meeting\n"]
+    }
+  ],
+  "skipped": []
+}
