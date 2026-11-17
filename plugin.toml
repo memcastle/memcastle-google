@@ -1,0 +1,23 @@
+format = 1
+memcastle = ">=0.6"
+# Add shared support files or directories here; integration manifests supply their own assets.
+artifacts = []
+
+[plugin]
+id = "google"
+provider = "google"
+description = "Google services integration for MemCastle"
+repository = "https://github.com/memcastle/memcastle-google"
+license = "MIT"
+
+
+
+[[modules]]
+id = "gmail"
+type = "source"
+manifest = "sources/gmail/memcastle-source.toml"
+entry = "sources/gmail/source.wasm"
+contract = "0.4.0"
+
+
+
