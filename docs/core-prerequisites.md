@@ -3,7 +3,8 @@
 Gmail is implemented against the development reconciliation contract introduced
 in `memcastle/memcastle@5772b582a7445b0099925b3fea09f853f79011a3`.
 The plugin keeps base WIT contract `0.4.0`, extension `0.1.0`, and minimum Core
-`>=0.6`. These are independent versions.
+`>=0.5.2` temporarily, until Core's release version is bumped. These are
+independent versions.
 
 The following prerequisites must be resolved before claiming fully usable
 default authentication, runtime custom-client support, and end-to-end validation.
@@ -11,11 +12,15 @@ They are Core/maintainer work, not behavior emulated inside this source.
 
 ## Compatible development binary
 
-At initial implementation, installed and published development Core identified
-as `0.5.2`, even though current Core source contained reconciliation support.
-Such a binary does not satisfy `>=0.6`. Publish an appropriately versioned
-development binary containing the extension. CI intentionally tests development
-only; do not widen the plugin's compatibility range to bypass this check.
+The published development Core currently identifies as `0.5.2` and contains the
+reconciliation extension. The minimum is temporarily `>=0.5.2` so it can validate
+this plugin before Core's release version is bumped. CI intentionally tests
+development only. Older installed/stable binaries reporting the same version
+may lack reconciliation support; the version requirement alone does not imply
+that those builds are supported.
+
+Raise the minimum to the release containing the extension once Core bumps its
+version.
 
 Acceptance: inspect, source conformance, reconciliation mining tests and archive
 lifecycle tests all run on an actual compatible binary without changing manifests.

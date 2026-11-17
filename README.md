@@ -19,7 +19,8 @@ search, resumable history synchronization, and Core-managed deletion reconciliat
 See the [Gmail module](sources/gmail/README.md) for options and semantics, and the
 [OAuth setup guide](docs/oauth.md) to create a Desktop client.
 
-This implementation targets development Core **>=0.6**. The default OAuth client
+This implementation temporarily requires **>=0.5.2** and targets development Core
+with reconciliation support until Core's release version is bumped. The default OAuth client
 is awaiting registration; runtime custom-client support and offline OAuth
 conformance have explicit [Core prerequisites](docs/core-prerequisites.md).
 
@@ -86,7 +87,7 @@ Outside a Git checkout, pass `--version` when packaging.
 
 CI builds the modules that exist, packages the plugin and validates its archive against MemCastle Core.
 
-The `core_versions` answer is `development` only; this plugin requires Core `>=0.6`
+The `core_versions` answer is `development` only; this plugin requires Core `>=0.5.2`
 and its reconciliation extension.
 Validation runs on pull requests and pushes to `main`.
 

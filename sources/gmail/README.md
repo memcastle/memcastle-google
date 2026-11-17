@@ -2,7 +2,9 @@
 
 Mine Gmail messages and textual attachments using Gmail's native search syntax.
 The source uses the `memcastle:source@0.4.0` contract with reconciliation extension
-`0.1.0`, targeting **development Core >=0.6**.
+`0.1.0`, targeting **development Core** with a temporary minimum of **>=0.5.2**
+until Core's release version is bumped. Older binaries reporting `0.5.2` may lack
+the required reconciliation extension; use the development build.
 
 ## Status and prerequisites
 
