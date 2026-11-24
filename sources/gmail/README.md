@@ -1,5 +1,9 @@
 # Gmail source
 
+From the plugin root, `mise run source:gmail:build` builds and stages the package-ready component.
+Run `python3 scripts/validate_component.py source sources/gmail/source.wasm` with wasm-tools 1.263.0
+before running the production-component OAuth fixtures described below.
+
 Mine Gmail messages and textual attachments using Gmail's native search syntax.
 The source uses the `memcastle:source@0.5.0` contract with reconciliation extension
 `0.1.0`, targeting **development Core** with a temporary minimum of **>=0.5.2**
