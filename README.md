@@ -20,9 +20,10 @@ See the [Gmail module](sources/gmail/README.md) for options and semantics, and t
 [OAuth setup guide](docs/oauth.md) to create a Desktop client.
 
 This implementation temporarily requires **>=0.5.2** and targets development Core
-with reconciliation support until Core's release version is bumped. The default OAuth client
-is awaiting registration; runtime custom-client support and offline OAuth
-conformance have explicit [Core prerequisites](docs/core-prerequisites.md).
+with source contract `0.5.0` and WASI 0.3 support until Core's release version is
+bumped. Core supports custom OAuth clients and offline OAuth conformance; see the
+[Core baseline](docs/core-prerequisites.md). The default OAuth client is awaiting
+registration; users can configure their own client now.
 
 ## Install
 
@@ -44,7 +45,7 @@ After installation, explicitly enable the sources you want to use.
 
 You'll need a plugin-capable MemCastle Core binary and Git.
 
-Install Rust with the `wasm32-wasip2` target for source and embedding modules.
+Install Rust **1.100 or newer** with the `wasm32-wasip3` target for source modules.
 
 For each source, run its tests, build the Wasm component and copy the compiled component
 to `sources/<id>/source.wasm`.
@@ -53,7 +54,7 @@ See the module's README and the CI workflow for its crate-specific artifact name
 ```sh
 cargo generate-lockfile --manifest-path sources/<id>/Cargo.toml
 cargo test --manifest-path sources/<id>/Cargo.toml --locked --lib
-cargo build --manifest-path sources/<id>/Cargo.toml --locked --release --target wasm32-wasip2
+cargo build --manifest-path sources/<id>/Cargo.toml --locked --release --target wasm32-wasip3
 ```
 
 From the project root, package and smoke-test the result:

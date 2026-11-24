@@ -1,18 +1,17 @@
 # Gmail source
 
 Mine Gmail messages and textual attachments using Gmail's native search syntax.
-The source uses the `memcastle:source@0.4.0` contract with reconciliation extension
+The source uses the `memcastle:source@0.5.0` contract with reconciliation extension
 `0.1.0`, targeting **development Core** with a temporary minimum of **>=0.5.2**
 until Core's release version is bumped. Older binaries reporting `0.5.2` may lack
-the required reconciliation extension; use the development build.
+the required contract/runtime; use the development build with WASI 0.3 support.
 
 ## Status and prerequisites
 
-The Gmail implementation and offline native tests are present. Online use and
-production-component conformance depend on the [Core prerequisites](../../docs/core-prerequisites.md):
-a compatible Core, OAuth fixture-token support, and a real Desktop OAuth client.
+The [Core baseline](../../docs/core-prerequisites.md) supports reconciliation,
+offline production-component conformance, and runtime OAuth client overrides.
 The manifest's default client ID is currently an **unconfigured development placeholder**.
-Runtime custom-client configuration also requires the documented Core support.
+For online use, configure your own real Desktop OAuth client using the guide below.
 
 Install `curl` on the machine running the daemon. Core runs it through the
 consented process permission; no shell, filesystem, environment-variable, or
@@ -103,22 +102,32 @@ deterministic content and relevant metadata, excluding transport/progress data.
 
 ## Development
 
+Use Rust 1.100 or newer, Python 3 for the offline transport fixture, and the
+`wasm32-wasip3` target. Bindings use wit-bindgen 0.63 with `sync: true`: Rust
+methods remain synchronous while acquisition exports use Core's async WIT types.
+
 ```sh
 cargo fmt --all -- --check
 cargo test --locked --lib
-cargo clippy --locked --target wasm32-wasip2 -- -D warnings
-cargo build --locked --release --target wasm32-wasip2
-cp target/wasm32-wasip2/release/gmail.wasm source.wasm
+cargo clippy --locked --target wasm32-wasip3 -- -D warnings
+cargo build --locked --release --target wasm32-wasip3
+cp target/wasm32-wasip3/release/gmail.wasm source.wasm
 ```
 
 Commit `Cargo.lock`. Native tests use injected REST responses and exercise the
 checked-in offline curl fixture. They require no Google account or live network.
 The fake transport rejects all unexpected endpoints and never forwards requests.
 
-Once Core supports safe synthetic OAuth-token injection, put `fixtures/bin` on
-PATH and run `memcastle source test . --no-build` against the production component.
-Until then, that command is blocked: Core's selected-credential fixture is not an
-OAuth token. No test-token special case exists in the production plugin.
+Run production-component conformance with the fake transport:
+
+```sh
+PATH="$PWD/fixtures/bin:$PATH" memcastle source test .
+```
+
+The manifest enables `[test] fixture_access_token = true`; Core supplies
+`memcastle-source-test-access-token` through the ordinary OAuth host function.
+No real sign-in is resolved, and no test-token special case exists in the plugin.
+The setting affects only the conformance runner, not installed execution.
 
 Build this component before packaging the containing provider plugin; see the
 root [contributing guide](../../CONTRIBUTING.md).

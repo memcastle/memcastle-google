@@ -17,6 +17,5 @@ id = "gmail"
 type = "source"
 manifest = "sources/gmail/memcastle-source.toml"
 entry = "sources/gmail/source.wasm"
-contract = "0.4.0"
-
+contract = "0.5.0"
 

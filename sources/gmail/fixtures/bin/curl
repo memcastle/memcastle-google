@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Offline conformance transport. Never forwards a request to the network.
 
-Requires Core's proposed synthetic OAuth access-token injection (see docs).
+Uses Core's synthetic OAuth access-token injection (see docs).
 This executable is a test fixture, not a plugin runtime artifact.
 """
 import base64

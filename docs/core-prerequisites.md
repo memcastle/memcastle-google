@@ -1,85 +1,57 @@
-# Core prerequisites for Gmail
+# Core baseline for Gmail
 
-Gmail is implemented against the development reconciliation contract introduced
-in `memcastle/memcastle@5772b582a7445b0099925b3fea09f853f79011a3`.
-The plugin keeps base WIT contract `0.4.0`, extension `0.1.0`, and minimum Core
-`>=0.5.2` temporarily, until Core's release version is bumped. These are
-independent versions.
+The Core requirements tracked in [memcastle#388](https://github.com/memcastle/memcastle/issues/388)
+are available in development Core. Gmail targets the baseline at
+`memcastle/memcastle@828f0f6e6d937fe29b379e1a63b0985c40ab8aa7`:
 
-The following prerequisites must be resolved before claiming fully usable
-default authentication, runtime custom-client support, and end-to-end validation.
-They are Core/maintainer work, not behavior emulated inside this source.
+- Source WIT package `memcastle:source@0.5.0`, with async acquisition functions.
+- Reconciliation capability `0.1.0`, independently versioned from the WIT package.
+- Rust 1.100 or newer, `wasm32-wasip3` / WASI 0.3, wit-bindgen 0.63, and Core's
+  compatible Wasmtime runtime. Rust uses stackful `sync: true` bindings.
+- Core-managed OAuth client-ID overrides on source configurations.
+- Synthetic OAuth access tokens in the production-component conformance runner.
 
-## Compatible development binary
-
-The published development Core currently identifies as `0.5.2` and contains the
-reconciliation extension. The minimum is temporarily `>=0.5.2` so it can validate
-this plugin before Core's release version is bumped. CI intentionally tests
-development only. Older installed/stable binaries reporting the same version
-may lack reconciliation support; the version requirement alone does not imply
-that those builds are supported.
-
-Raise the minimum to the release containing the extension once Core bumps its
-version.
-
-Acceptance: inspect, source conformance, reconciliation mining tests and archive
-lifecycle tests all run on an actual compatible binary without changing manifests.
+The minimum remains temporarily `>=0.5.2` until Core's release version is bumped.
+CI tests development only. Older stable binaries reporting the same version may
+lack these capabilities; use the development binary. Raise the minimum to the
+release containing this baseline once Core bumps its version.
 
 ## Effective OAuth client configuration
 
-Core currently takes the public client ID from `[permissions.oauth]` in the
-installed source manifest. A Gmail `client_id` source option cannot change
-authorization that has already happened.
+The manifest supplies the default public client ID. Set `oauth_client_id` on a
+source configuration, or use `memcastle source config set --oauth-client-id`, to
+select a user-owned public client without rebuilding the plugin.
 
-Required Core behavior:
+Core applies the effective ID to authorization, code exchange and refresh while
+preserving the declared endpoints, scopes, callback and PKCE behavior. Named
+configurations have separate authorization slots. Changing a client requires a
+fresh sign-in; queued/resumed jobs cannot silently switch OAuth identity.
 
-- A user-owned public client-ID override, preferably on a reusable source
-  configuration, with the manifest's project-owned client as the default.
-- Apply the effective ID to authorization, code exchange and refresh; preserve
-  the manifest's endpoints, scopes and PKCE behavior.
-- Bind credentials and consent to the effective client and selected source
-  configuration. Tokens from different clients/accounts must not be reused.
-- Client changes require fresh authorization. Queue/resume behavior must pin the
-  appropriate identity and fail clearly rather than silently switch clients.
-- Expose the public effective ID/configuration through the supported configuration
-  interface without exposing tokens.
+See the [OAuth setup guide](oauth.md) for creation and configuration examples.
 
-Acceptance: two configurations can use different clients; both exchange and
-refresh successfully. Changing one client requires reauthentication without
-invalidating or borrowing the other configuration's tokens.
+## Production-component conformance
 
-There is deliberately no purported TOML/CLI override example here yet: Core has
-not defined that interface. Once implemented, update the [OAuth guide](oauth.md)
-with its real syntax and validate the documented procedure.
+`[test] fixture_access_token = true` supplies exactly
+`memcastle-source-test-access-token` through the normal `host.access-token`
+function. The normal OAuth declaration is still required. This is separate from
+`fixture_credential`, which supplies an env/file credential rather than OAuth.
 
-## Production-component OAuth conformance
+The checked-in fake curl accepts the synthetic token and never contacts Gmail.
+The production component is exercised without developer credentials or test-only
+code paths. Normalization has no token access, and the setting does not change
+installed execution. CI runs this conformance check before archive lifecycle
+validation.
 
-Core's existing `[test] fixture_credential` injects a selected env/file credential,
-not an OAuth access token. The conformance runner currently supplies no OAuth
-provider. Consequently fake curl alone cannot make `host.access-token` succeed.
+Native tests additionally exercise incremental paging/replay, expired-history
+recovery, query exclusions retained, pending refresh, confirmed deletion,
+restoration at the same revision, and deterministic message/attachment extraction.
+Archive lifecycle tests validate installation; they do not replace mining tests.
 
-Provide a conformance-only opt-in that supplies a fixed synthetic access token
-through the normal OAuth host function, requiring the normal OAuth declaration.
-It must never resolve a developer sign-in, environment variable or credential file.
-The proposed fixture value used by this repository is
-`memcastle-source-test-access-token`; coordinate its final value with Core.
-No new manifest field is declared until Core actually accepts it.
+## Remaining default-client registration
 
-Acceptance: the exact production `source.wasm` passes fixtures with fake curl,
-without network or real credentials. A missing token provider still fails; no
-source option, selected-credential fallback, magic token branch or test-feature
-build may bypass OAuth in the released component.
-
-Then add disposable-palace production-Wasm mining coverage for repeated runs,
-document-limited inventory continuation, query exclusions retained, confirmed
-deletion/history retention, restoration at the same revision, pending retries,
-and independent named miners. `memcastle plugin test` alone checks installation
-lifecycle, not these mining semantics.
-
-## Default client registration
-
-The manifest contains an unmistakable nonfunctional development placeholder.
-Maintainers must create the project's Desktop client, replace the public default
-ID, and verify both browser PKCE authorization and subsequent refresh. See
-[OAuth setup](oauth.md). Do not publish a release described as ready for default
-sign-in while that placeholder remains.
+The manifest still contains an explicit nonfunctional development placeholder.
+Maintainers must register the project's Desktop client and replace the public
+default ID before a release with ready-to-use default sign-in. Users can already
+select their own client through Core's override. Live Google authorization and
+later refresh must be verified with a real registration; offline conformance
+does not validate Google's consent or token endpoints.

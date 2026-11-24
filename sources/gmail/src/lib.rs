@@ -7,7 +7,7 @@ mod sync;
 
 use api::Gmail;
 
-wit_bindgen::generate!({ path: "wit", world: "reconciled-source" });
+wit_bindgen::generate!({ path: "wit", world: "reconciled-source", sync: true });
 
 use exports::memcastle::source::{adapter, reconciliation};
 use memcastle::source::types::{
