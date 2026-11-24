@@ -3,22 +3,43 @@ format = 1
 [source]
 name = "gmail"
 version = "0.1.0"
-description = "Text files from a selected directory"
+description = "Incremental Gmail messages and textual attachments"
 
 [compatibility]
-contract = "0.4.0"
-memcastle = ">=0.6"
+contract = "0.5.0"
+memcastle = ">=0.5.2"
+reconciliation = "0.1.0"
 
 [capabilities]
 incremental = true
+needs_credentials = true
 
-# The host only allows access to the chosen directory.
-[permissions.filesystem]
-read = ["locator"]
+[permissions]
+process = ["curl"]
+
+[permissions.oauth]
+# DEVELOPMENT PLACEHOLDER: replace with the project's public Desktop client before release.
+client_id = "unconfigured-google-desktop-client.apps.googleusercontent.com"
+scopes = ["https://www.googleapis.com/auth/gmail.readonly"]
+authorize_url = "https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&prompt=consent"
+token_url = "https://oauth2.googleapis.com/token"
+
+[options.query]
+type = "string"
+description = "Native Gmail search, passed unchanged (empty means all matching API-default mail)"
+
+[options.include_spam_trash]
+type = "string"
+description = "Include spam and trash in the search universe: true or false (default false)"
+
+[options.sweep_interval_hours]
+type = "string"
+description = "Hours between full searches for time-dependent queries (positive integer, default 24)"
 
 [build]
-command = ["cargo", "build", "--release", "--target", "wasm32-wasip2", "--target-dir", "target"]
-output = "target/wasm32-wasip2/release/gmail.wasm"
+command = ["cargo", "build", "--release", "--target", "wasm32-wasip3", "--target-dir", "target"]
+output = "target/wasm32-wasip3/release/gmail.wasm"
 
 [test]
 fixtures = "fixtures"
+fixture_access_token = true

@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""Offline conformance transport. Never forwards a request to the network.
+
+Uses Core's synthetic OAuth access-token injection (see docs).
+This executable is a test fixture, not a plugin runtime artifact.
+"""
+import base64
+import json
+from pathlib import Path
+import shlex
+import sys
+from urllib.parse import parse_qs, urlsplit
+
+
+def respond():
+    expected = ["-q", "--silent", "--show-error", "--proto", "=https", "--connect-timeout", "5", "--max-time", "10", "--max-filesize", "12582912", "--write-out", "\n%{http_code}", "--config", "-"]
+    assert sys.argv[1:] == expected
+    lines = [shlex.split(line) for line in sys.stdin.read().splitlines()]
+    assert len(lines) == 3
+    assert lines[0][:2] == ["url", "="]
+    assert lines[1] == ["header", "=", "Authorization: Bearer memcastle-source-test-access-token"]
+    assert lines[2] == ["header", "=", "Accept: application/json"]
+    url = urlsplit(lines[0][2])
+    assert url.scheme == "https" and url.netloc == "gmail.googleapis.com"
+    prefix = "/gmail/v1/users/me"
+    assert url.path.startswith(prefix)
+    path = url.path[len(prefix):]
+    params = parse_qs(url.query, keep_blank_values=True)
+    root = Path(__file__).resolve().parent.parent / "responses"
+    if path == "/profile":
+        assert not params
+        return json.loads((root / "profile.json").read_text())
+    if path == "/messages":
+        assert params == {"q":["from:author@example.com"], "includeSpamTrash":["false"], "maxResults":["100"]}
+        return {"messages":[{"id":"a","threadId":"ta"},{"id":"b","threadId":"tb"}]}
+    if path == "/history":
+        assert params == {"startHistoryId":["10"], "maxResults":["20"]}
+        return {"historyId":"10"}
+    if path in ("/messages/a", "/messages/b"):
+        assert params in ({"format":["full"]}, {"format":["minimal"]})
+        return json.loads((root / (path.rsplit("/",1)[1] + ".json")).read_text())
+    if path == "/messages/b/attachments/transcript":
+        assert not params
+        return {"size":21,"data":base64.urlsafe_b64encode(b"WEBVTT\nhello meeting\n").decode().rstrip("=")}
+    raise AssertionError("unexpected fixture endpoint")
+
+
+try:
+    sys.stdout.write(json.dumps(respond()) + "\n200")
+except Exception:
+    # Never print input: a misconfigured live invocation could contain a token.
+    sys.stderr.write("Gmail fixture rejected request; no network access attempted\n")
+    sys.exit(1)

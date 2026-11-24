@@ -1,123 +1,86 @@
-//! A minimal incremental MemCastle source that reads `.txt` files from its locator.
+//! Gmail acquisition; Core owns inventory, ingestion and durable progress.
 
-use serde_json::{Value, json};
-use std::path::Path;
+mod api;
+mod config;
+mod message;
+mod sync;
 
-wit_bindgen::generate!({ path: "wit", world: "source" });
+use api::Gmail;
 
-use exports::memcastle::source::adapter::Guest;
+wit_bindgen::generate!({ path: "wit", world: "reconciled-source", sync: true });
+
+use exports::memcastle::source::{adapter, reconciliation};
 use memcastle::source::types::{
-    Candidate, CanonicalDocument, Discovery, RawDocument, Segment, SourceError, SourceKind,
-    SourceRef,
+    Candidate, CanonicalDocument, Discovery, RawDocument, SourceError, SourceRef,
 };
+use reconciliation::{Acquisition, Decision, DiscoveryPage, KnownDocument};
 
 struct Source;
 
-impl Guest for Source {
+impl adapter::Guest for Source {
     fn identify(
         locator: Option<String>,
         options: Vec<(String, String)>,
     ) -> Result<SourceRef, SourceError> {
-        if !options.is_empty() {
-            return Err(SourceError::InvalidInput(
-                "this source accepts no options".into(),
-            ));
-        }
-        let locator =
-            locator.ok_or_else(|| SourceError::InvalidInput("give a directory to mine".into()))?;
-        if !Path::new(&locator).is_dir() {
-            return Err(SourceError::InvalidInput(format!(
-                "{locator} is not a readable directory"
-            )));
-        }
-        Ok(SourceRef {
-            source: "gmail".into(),
-            account: None,
-            locator,
-            options,
-        })
+        let options = config::Options::parse(&options)?;
+        let mut api = api::Client::connect()?;
+        config::identify(locator.as_deref(), options, &api.profile()?)
     }
 
-    fn default_wing(source: SourceRef) -> String {
-        Path::new(&source.locator).file_name().map_or_else(
-            || "files".into(),
-            |name| name.to_string_lossy().into_owned(),
-        )
+    fn default_wing(_: SourceRef) -> String {
+        "gmail".into()
     }
-
     fn default_room() -> String {
-        "notes".into()
+        "emails".into()
     }
 
-    fn discover(source: SourceRef, cursor: String, limit: u32) -> Result<Discovery, SourceError> {
-        let last: Value = serde_json::from_str(&cursor)
-            .map_err(|_| SourceError::CursorInvalid("invalid JSON cursor".into()))?;
-        let after = if last.is_null() {
-            None
-        } else {
-            Some(
-                last.get("after")
-                    .and_then(Value::as_str)
-                    .ok_or_else(|| SourceError::CursorInvalid("missing `after`".into()))?,
-            )
-        };
-        let mut names: Vec<_> = std::fs::read_dir(&source.locator)
-            .map_err(|e| SourceError::Failed(e.to_string()))?
-            .filter_map(Result::ok)
-            .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_file()))
-            .filter_map(|entry| entry.file_name().into_string().ok())
-            .filter(|name| name.ends_with(".txt") && after.is_none_or(|last| name.as_str() > last))
-            .collect();
-        names.sort();
-        let exhausted = names.len() <= limit as usize;
-        names.truncate(limit as usize);
-        Ok(Discovery {
-            candidates: names
-                .into_iter()
-                .map(|name| Candidate {
-                    cursor_after: json!({"after": name}).to_string(),
-                    handle: name.clone(),
-                    external_id: name,
-                })
-                .collect(),
-            exhausted,
-        })
+    fn discover(_: SourceRef, _: String, _: u32) -> Result<Discovery, SourceError> {
+        Err(failed("Gmail requires the Core reconciliation extension"))
     }
 
-    fn read(source: SourceRef, candidate: Candidate) -> Result<Option<RawDocument>, SourceError> {
-        let path = Path::new(&source.locator).join(&candidate.handle);
-        let Ok(body) = std::fs::read_to_string(&path) else {
-            return Ok(None);
-        };
-        // A content hash, rather than the file's timestamp, detects edits without needless re-ingestion.
-        let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
-        for byte in body.bytes() {
-            hash = (hash ^ u64::from(byte)).wrapping_mul(0x0100_0000_01b3);
-        }
-        Ok(Some(RawDocument {
-            external_id: candidate.external_id,
-            revision: format!("{hash:016x}"),
-            body,
-            metadata: json!({"path": path.display().to_string()}).to_string(),
-            occurred_at: None,
-        }))
+    fn read(_: SourceRef, _: Candidate) -> Result<Option<RawDocument>, SourceError> {
+        Err(failed("Gmail requires reconciled acquisition"))
     }
 
     fn normalize(raw: RawDocument) -> Result<CanonicalDocument, SourceError> {
-        let metadata: Value = serde_json::from_str(&raw.metadata).unwrap_or(Value::Null);
-        Ok(CanonicalDocument {
-            title: Some(raw.external_id),
-            room: None,
-            name: None,
-            kind: SourceKind::File,
-            uri: metadata
-                .get("path")
-                .and_then(Value::as_str)
-                .map(str::to_string),
-            tags: Vec::new(),
-            segments: vec![Segment { text: raw.body }],
-        })
+        message::normalize(raw)
     }
+}
+
+impl reconciliation::Guest for Source {
+    fn discover(
+        source: SourceRef,
+        cursor: String,
+        limit: u32,
+    ) -> Result<DiscoveryPage, SourceError> {
+        let mut api = api::Client::connect()?;
+        let profile = config::verify(&source, &mut api)?;
+        sync::discover(&mut api, &source, &profile, &cursor, limit, sync::now()?)
+    }
+
+    fn reconcile(source: SourceRef, known: KnownDocument) -> Result<Decision, SourceError> {
+        let mut api = api::Client::connect()?;
+        config::verify(&source, &mut api)?;
+        message::reconcile(&mut api, &known)
+    }
+
+    fn acquire(source: SourceRef, candidate: Candidate) -> Result<Acquisition, SourceError> {
+        let mut api = api::Client::connect()?;
+        config::verify(&source, &mut api)?;
+        if candidate.handle != candidate.external_id {
+            return Err(failed("invalid Gmail candidate handle"));
+        }
+        message::acquire(&mut api, &source, &candidate.external_id)
+    }
+}
+
+fn failed(message: &str) -> SourceError {
+    SourceError::Failed(message.into())
+}
+
+fn digest(bytes: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    format!("{:x}", Sha256::digest(bytes))
 }
 
 export!(Source);

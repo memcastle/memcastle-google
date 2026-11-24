@@ -12,6 +12,19 @@ Google services integration for MemCastle
 This is a versioned MemCastle provider plugin.
 It includes source modules.
 
+## Gmail
+
+The `gmail` source mines messages and textual attachments using native Gmail
+search, resumable history synchronization, and Core-managed deletion reconciliation.
+See the [Gmail module](sources/gmail/README.md) for options and semantics, and the
+[OAuth setup guide](docs/oauth.md) to create a Desktop client.
+
+This implementation temporarily requires **>=0.5.2** and targets development Core
+with source contract `0.5.0` and WASI 0.3 support until Core's release version is
+bumped. Core supports custom OAuth clients and offline OAuth conformance; see the
+[Core baseline](docs/core-prerequisites.md). The default OAuth client is awaiting
+registration; users can configure their own client now.
+
 ## Install
 
 If this plugin has a published release in the
@@ -32,7 +45,7 @@ After installation, explicitly enable the sources you want to use.
 
 You'll need a plugin-capable MemCastle Core binary and Git.
 
-Install Rust with the `wasm32-wasip2` target for source and embedding modules.
+Install Rust **1.100 or newer** with the `wasm32-wasip3` target for source modules.
 
 For each source, run its tests, build the Wasm component and copy the compiled component
 to `sources/<id>/source.wasm`.
@@ -41,7 +54,7 @@ See the module's README and the CI workflow for its crate-specific artifact name
 ```sh
 cargo generate-lockfile --manifest-path sources/<id>/Cargo.toml
 cargo test --manifest-path sources/<id>/Cargo.toml --locked --lib
-cargo build --manifest-path sources/<id>/Cargo.toml --locked --release --target wasm32-wasip2
+cargo build --manifest-path sources/<id>/Cargo.toml --locked --release --target wasm32-wasip3
 ```
 
 From the project root, package and smoke-test the result:
@@ -75,7 +88,8 @@ Outside a Git checkout, pass `--version` when packaging.
 
 CI builds the modules that exist, packages the plugin and validates its archive against MemCastle Core.
 
-The `core_versions` answer defaults to `development` and `0.5` (the latest stable patch in the 0.5 release tree).
+The `core_versions` answer is `development` only; this plugin requires Core `>=0.5.2`
+and its reconciliation extension.
 Validation runs on pull requests and pushes to `main`.
 
 When modules have native tests, their jobs upload available LCOV and JUnit results to Codecov using OIDC.
