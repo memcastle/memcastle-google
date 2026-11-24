@@ -1,5 +1,15 @@
 # google
 
+## Modules and root tasks
+
+- Source: [gmail](sources/gmail/).
+
+Use `mise tasks ls` for `source:gmail:build`, `source:gmail:test`, `source:gmail:lint`, and `source:gmail:format:check`.
+The build task stages `source.wasm` for packaging; native tests do not replace host conformance.
+Requires Rust 1.100+, `wasm32-wasip3`, wasm-tools 1.263.0, and upstream development Core containing `828f0f6`.
+Stable 0.5.2 predates WASI 0.3 despite sharing the development version string; the compatibility range is transitional.
+Run `python3 scripts/validate_component.py source sources/gmail/source.wasm` before host and archive checks.
+
 [![CI][ci-badge]][ci-workflow] [![Codecov][codecov-badge]][codecov-project]
 
 [ci-badge]: https://github.com/memcastle/memcastle-google/actions/workflows/ci.yaml/badge.svg?branch=main

@@ -15,6 +15,10 @@ and build its component to `sources/<id>/source.wasm` before packaging.
 
 ## Check a change
 
+Discover typed module tasks with `mise tasks ls`; see [root tasks](README.md#modules-and-root-tasks).
+Use upstream development Core containing `828f0f6` or a verified descendant until a compatible stable release exists.
+Validate components with wasm-tools 1.263.0 through `scripts/validate_component.py` before OAuth fixture conformance.
+
 Install a plugin-capable MemCastle Core binary.
 For source modules, install Rust 1.100 or newer with the `wasm32-wasip3` target.
 

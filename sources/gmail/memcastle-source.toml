@@ -37,7 +37,7 @@ type = "string"
 description = "Hours between full searches for time-dependent queries (positive integer, default 24)"
 
 [build]
-command = ["cargo", "build", "--release", "--target", "wasm32-wasip3", "--target-dir", "target"]
+command = ["cargo", "build", "--locked", "--release", "--target", "wasm32-wasip3", "--target-dir", "target"]
 output = "target/wasm32-wasip3/release/gmail.wasm"
 
 [test]
